@@ -1,4 +1,4 @@
-# Hybrid Generative AI for De Novo Design of Co-Crystals with Enhanced Tabletability
+ # Hybrid Generative AI for De Novo Design of Co-Crystals with Enhanced Tabletability
 
 Co-crystallization is an accessible way to control physicochemical characteristics of organic crystals, which finds many biomedical applications. In this work, we present GEMCODE, a novel pipeline for automated co-crystal screening, based on generative AI and evolutionary optimization. GEMCODE enables fast de novo co-crystal design with target tabletability profiles. With a series of experimental studies, we show that GEMCODE achieves state-of-the-art performance even under realistic computational constraints, which makes it highly practical for domain experts.
 
