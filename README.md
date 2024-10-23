@@ -1,5 +1,8 @@
  # Hybrid Generative AI for De Novo Design of Co-Crystals with Enhanced Tabletability
 
+><a href="https://arxiv.org/abs/2410.17005"><img src='https://img.shields.io/badge/arXiv-GEMCODE-red' alt='Paper PDF'></a>
+
+
 Co-crystallization is an accessible way to control physicochemical characteristics of organic crystals, which finds many biomedical applications. In this work, we present GEMCODE, a novel pipeline for automated co-crystal screening, based on generative AI and evolutionary optimization. GEMCODE enables fast de novo co-crystal design with target tabletability profiles. With a series of experimental studies, we show that GEMCODE achieves state-of-the-art performance even under realistic computational constraints, which makes it highly practical for domain experts.
 
 <img src="pipeline/image/gemcode.png"/>
@@ -61,3 +64,15 @@ The results will appear here: `pipeline\result\cocrystals.xlsx`
 ### Citation
 
 Gubina, N., Dmitrenko, A., Solovev G., Yamshchikova, L., Petrov O., Lebedev, I., Serov, N., Kirgizov, G., Nikitin N., Vinogradov, V. (2024). [Hybrid Generative AI for De Novo Design of Co-Crystals with Enhanced Tabletability.](https://nips.cc/virtual/2024/poster/95931) 38th Conference on Neural Information Processing Systems (NeurIPS).
+
+```
+@article{gubina2024gemcode,
+      title={Hybrid Generative AI for De Novo Design of Co-Crystals with Enhanced Tabletability}, 
+      author={Nina Gubina and Andrei Dmitrenko and Gleb Solovev and Lyubov Yamshchikova and Oleg Petrov and Ivan Lebedev and Nikita Serov and Grigorii Kirgizov and Nikolay Nikitin and Vladimir Vinogradov},
+      year={2024},
+      eprint={2410.17005},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2410.17005}, 
+}
+```
