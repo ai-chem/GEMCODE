@@ -20,30 +20,35 @@ import pandas as pd
 from rdkit.Contrib.SA_Score import sascorer
 from rdkit import Chem,DataStructs
 from rdkit.Chem import Descriptors, QED, rdDepictor, AllChem, Draw
+from typing import List
+
+path_to_generated_mols_csv = r'D:\Projects\GEMCODE\pipeline\result\VAE_all_valid.csv'
+generated_mols = pd.read_csv(path_to_generated_mols_csv)['generated_coformers']
 
 
-path_to_generated_mols_csv = r'pipeline\coformers\mols_NC(=O)c1cnccn1.csv'
-generated_mols = pd.read_csv(path_to_generated_mols_csv)['0']
+# drug = 'NC(=O)c1cnccn1'
+# classification = Classifier()
+# df = classification.clf_results(drug, generated_mols,properties=['unobstructed', 'orthogonal_planes', 'h_bond_bridging'])
 
+# sa = []
+# for mol in df.iloc[:,1].tolist():
+#     sa.append(sascorer.calculateScore(Chem.MolFromSmiles(mol)))
+# total_with_sa3 = sum([i<=3 for i in sa])
 
-drug = 'NC(=O)c1cnccn1'
-classification = Classifier()
-df = classification.clf_results(drug, generated_mols)
+# list_smi = df.iloc[:,1].tolist()
+# fpgen = AllChem.GetRDKitFPGenerator()
+# df['mol'] = df.iloc[:,1].apply(Chem.MolFromSmiles)
+# fps = [fpgen.GetFingerprint(Chem.MolFromSmiles(x)) for x in list_smi]
 
-sa = []
-for mol in df.iloc[:,1].tolist():
-    sa.append(sascorer.calculateScore(Chem.MolFromSmiles(mol)))
-total_with_sa3 = sum([i<=3 for i in sa])
-
-list_smi = df.iloc[:,1].tolist()
-fpgen = AllChem.GetRDKitFPGenerator()
-df['mol'] = df.iloc[:,1].apply(Chem.MolFromSmiles)
-fps = [fpgen.GetFingerprint(Chem.MolFromSmiles(x)) for x in list_smi]
-
-def check_diversity(mol):
-    fp = fpgen.GetFingerprint(mol)
-    scores = DataStructs.BulkTanimotoSimilarity(fp, fps)
-    return statistics.mean(scores)
+def check_self_diversity(smiles:List[str]):
+    fpgen = AllChem.GetRDKitFPGenerator()
+    self_scores = []
+    gen_fp = [fpgen.GetFingerprint(mol) for mol in [Chem.MolFromSmiles(i) for i in smiles]]
+    if len(gen_fp)==1:
+        return [0]
+    for i,mol in enumerate(gen_fp):
+        self_scores.append(1-max(DataStructs.BulkTanimotoSimilarity(mol, gen_fp[:i] + gen_fp[i+1 :])))
+    return self_scores
 
 def check_chem_valid(smiles:List[str])->List[str]:
     """Check smiles for chemical validity and return only valid molecules.
@@ -113,7 +118,7 @@ def check_metrics(
     gen_d = gen_d[gen_d['val_check']==1][gen_col_name]
     #len_train = len(train_d)
     len_gen = len(gen_d)
-    df['diversity'] = gen_d.mol.apply(check_diversity)
+    gen_d['diversity'] = gen_d[gen_col_name].apply(check_self_diversity)
     mean_diversity= gen_d['diversity'].mean()
 
     print('Generated molecules consist of',(len_gen-train_d.isin(gen_d).sum())/len_gen*100, '% new examples',
@@ -142,53 +147,65 @@ def check_metrics_and_filter(
     # Load data
     train_d = pd.read_csv(train_dataset_path)[train_col_name]
     gen_d = pd.read_csv(gen_data_path)
+    total_initial = len(gen_d)
     
     # Remove duplicates in generated data
     duplicates = gen_d.duplicated(subset=gen_col_name, keep='first').sum()
     gen_d = gen_d.drop_duplicates(subset=gen_col_name, keep='first')
+    valid_mols = check_chem_valid(gen_d[gen_col_name])
+    gen_d = gen_d[~gen_d[gen_col_name].isin(train_d)]
+    valid_mols = gen_d[gen_d[gen_col_name].isin(valid_mols)]
+    # gen_d = gen_d[new_mols]
+    drug = 'NC(=O)c1cnccn1'
+    classification = Classifier()
+    df = classification.clf_results(drug, valid_mols[gen_col_name],properties=['unobstructed', 'orthogonal_planes', 'h_bond_bridging'])
     
+    if filter_conditions:
+        filtered_df = df[
+            (df['unobstructed'] == 1) & 
+            (df['orthogonal_planes'] == 1) & 
+            (df['h_bond_bridging'] == 0)
+        ]
+        print(f"\nAfter additional filtering: {len(filtered_df)} molecules")
+        
+        print(f"Filter pass rate: {(len(filtered_df)/total_initial)*100:.2f}%")
+        #return filtered_df
+
     # Keep only valid molecules
-    gen_d = gen_d[gen_d['val_check'] == 1]
+
+    
     
     # Find novel molecules (not present in training set)
-    new_mols = ~gen_d[gen_col_name].isin(train_d)
-    gen_d = gen_d[new_mols]
+
     
     # Calculate statistics
-    total_initial = len(pd.read_csv(gen_data_path))
-    total_after_processing = len(gen_d)
-    
+    total_after_processing = len(filtered_df)
+    filtered_df['diversity'] = check_self_diversity(filtered_df[gen_col_name])
+    mean_diversity= filtered_df['diversity'].mean()
     print(f"Initially generated: {total_initial} molecules")
     print(f"After processing: {total_after_processing} molecules")
     print(f"Duplicates removed: {duplicates}")
-    print(f"Percentage of novel molecules: {(len(gen_d)/total_initial)*100:.2f}%")
-    
+    print(f"Diversity: {mean_diversity}")
+    print(f"Target molecules: {(len(filtered_df)/total_initial)*100:.2f}%")
+
     # Apply additional filtering if requested
-    if filter_conditions:
-        filtered_df = gen_d[
-            (gen_d['Unobstructed planes'] == 1) & 
-            (gen_d['Orthogonal planes'] == 1) & 
-            (gen_d['H-bonds bridging'] == 0)
-        ]
-        print(f"\nAfter additional filtering: {len(filtered_df)} molecules")
-        print(f"Filter pass rate: {(len(filtered_df)/total_after_processing)*100:.2f}%")
-        return filtered_df
+
     
-    return gen_d
+    return filtered_df
 
 
 if __name__=='__main__':
     # Example usage
-    check_metrics(train_dataset_path='',
-                  gen_data_path='',
-                  train_col_name='',
-                  gen_col_name='')
+    # check_metrics(train_dataset_path='',
+    #               gen_data_path='',
+    #               train_col_name='',
+    #               gen_col_name='')
     
     filtered_data = check_metrics_and_filter(
-        train_dataset_path="",
-        gen_data_path=".csv",
-        train_col_name="",
-        gen_col_name=""
+        train_dataset_path=r'D:\Projects\GEMCODE\pipeline\result\CVAE_all_valid.csv',
+        gen_data_path=r"D:\Projects\GEMCODE\pipeline\result\VAE_all_valid.csv",
+        train_col_name="generated_coformers",
+        gen_col_name="generated_coformers"
     )
 
     # Save results
