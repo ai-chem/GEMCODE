@@ -26,20 +26,6 @@ path_to_generated_mols_csv = r'D:\Projects\GEMCODE\pipeline\result\VAE_all_valid
 generated_mols = pd.read_csv(path_to_generated_mols_csv)['generated_coformers']
 
 
-# drug = 'NC(=O)c1cnccn1'
-# classification = Classifier()
-# df = classification.clf_results(drug, generated_mols,properties=['unobstructed', 'orthogonal_planes', 'h_bond_bridging'])
-
-# sa = []
-# for mol in df.iloc[:,1].tolist():
-#     sa.append(sascorer.calculateScore(Chem.MolFromSmiles(mol)))
-# total_with_sa3 = sum([i<=3 for i in sa])
-
-# list_smi = df.iloc[:,1].tolist()
-# fpgen = AllChem.GetRDKitFPGenerator()
-# df['mol'] = df.iloc[:,1].apply(Chem.MolFromSmiles)
-# fps = [fpgen.GetFingerprint(Chem.MolFromSmiles(x)) for x in list_smi]
-
 def check_self_diversity(smiles:List[str]):
     fpgen = AllChem.GetRDKitFPGenerator()
     self_scores = []
@@ -97,33 +83,33 @@ def check_novelty_mol_path(
           f'duplicates: {duplicates}')
     return novelty,duplicates
 
-def check_metrics(
-        train_dataset_path: str,
-        gen_data_path: str,
-        train_col_name: str,
-        gen_col_name: str) ->str:
-    """Function for evaluate diversity and new,valid,duplicated molecules generated compared with train data.
+# def check_metrics(
+#         train_dataset_path: str,
+#         gen_data_path: str,
+#         train_col_name: str,
+#         gen_col_name: str) ->str:
+#     """Function for evaluate diversity and new,valid,duplicated molecules generated compared with train data.
 
 
-    :param train_dataset_path: Path to csv train dataset.
-    :param gen_data_path: Path to csv gen dataset.
-    :param train_col_name: Name of column that consist a molecule strings.
-    :param gen_col_name: Name of column that consist a molecule strings.
-    :return:
-    """
-    train_d = pd.read_csv(train_dataset_path)[train_col_name]
-    gen_d = pd.read_csv(gen_data_path)
-    duplicates = gen_d.duplicated(subset=gen_col_name, keep='first').sum()
-    total_len_gen = len(gen_d[gen_col_name])
-    gen_d = gen_d[gen_d['val_check']==1][gen_col_name]
-    #len_train = len(train_d)
-    len_gen = len(gen_d)
-    gen_d['diversity'] = gen_d[gen_col_name].apply(check_self_diversity)
-    mean_diversity= gen_d['diversity'].mean()
+#     :param train_dataset_path: Path to csv train dataset.
+#     :param gen_data_path: Path to csv gen dataset.
+#     :param train_col_name: Name of column that consist a molecule strings.
+#     :param gen_col_name: Name of column that consist a molecule strings.
+#     :return:
+#     """
+#     train_d = pd.read_csv(train_dataset_path)[train_col_name]
+#     gen_d = pd.read_csv(gen_data_path)
+#     duplicates = gen_d.duplicated(subset=gen_col_name, keep='first').sum()
+#     total_len_gen = len(gen_d[gen_col_name])
+#     gen_d = gen_d[gen_d['val_check']==1][gen_col_name]
+#     #len_train = len(train_d)
+#     len_gen = len(gen_d)
+#     gen_d['diversity'] = gen_d[gen_col_name].apply(check_self_diversity)
+#     mean_diversity= gen_d['diversity'].mean()
 
-    print('Generated molecules consist of',(len_gen-train_d.isin(gen_d).sum())/len_gen*100, '% new examples',
-          '\t',f'{len_gen/total_len_gen*100}% valid molecules generated','\t',
-          f'duplicates, {duplicates}, mean diversity is {mean_diversity}')
+#     print('Generated molecules consist of',(len_gen-train_d.isin(gen_d).sum())/len_gen*100, '% new examples',
+#           '\t',f'{len_gen/total_len_gen*100}% valid molecules generated','\t',
+#           f'duplicates, {duplicates}, mean diversity is {mean_diversity}')
 
 def check_metrics_and_filter(
         train_dataset_path: str,
@@ -196,11 +182,7 @@ def check_metrics_and_filter(
 
 if __name__=='__main__':
     # Example usage
-    # check_metrics(train_dataset_path='',
-    #               gen_data_path='',
-    #               train_col_name='',
-    #               gen_col_name='')
-    
+
     filtered_data = check_metrics_and_filter(
         train_dataset_path=r'D:\Projects\GEMCODE\pipeline\result\CVAE_all_valid.csv',
         gen_data_path=r"D:\Projects\GEMCODE\pipeline\result\VAE_all_valid.csv",
@@ -210,13 +192,3 @@ if __name__=='__main__':
 
     # Save results
     filtered_data.to_csv("final_filtered.csv", index=False)
-
-# df['diversity'] = df.mol.apply(check_diversity)
-# mean_diversity= df['diversity'].mean()
-# stop = 1
-# print(df)
-# sa= []
-# for mol in df.iloc[:,1].tolist():
-#     sa.append(sascorer.calculateScore(Chem.MolFromSmiles(mol)))
-# df['sa_score']=sa
-# df.to_csv(f'results/{drug}.csv')
